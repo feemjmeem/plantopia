@@ -1,5 +1,7 @@
 #include <Adafruit_NeoTrellis.h>
 #include <ArduinoOTA.h>
+#include <NTPClient.h>
+#include <WiFiUdp.h>
 #include <Wire.h>
 #include "config.h"
 
@@ -10,9 +12,16 @@ const char *hostname = HOSTNAME;
 const uint16_t ota_port = OTA_PORT;
 const char *ota_password = OTA_PASSWORD;
 
+const char *es_host = ES_HOST;
+const uint16_t es_port = ES_PORT;
+const char *es_index = ES_INDEX;
+
 Adafruit_seesaw sensor [4];
 bool sensorStatus[4];
 int baseAddress = 0x36;
+
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, "pool.ntp.org", 0);
 
 void setup() {
     Serial.begin(115200);
@@ -68,19 +77,45 @@ void setup() {
             }
         }
     }
+    timeClient.begin();
 }
 
 void loop() {
     float tempC[4];
     uint16_t capread[4];
+    WiFiClient client;
+
+    if (!client.connect(es_host, es_port)) {
+        Serial.println("Can't connect to elasticsearch");
+        return;
+    }
+
     for (int i = 0; i < 4; i++) {
+        timeClient.update();
+        unsigned long time = timeClient.getEpochTime();
         tempC[i] = sensor[i].getTemp();
         capread[i] = sensor[i].touchRead(0);
 
         Serial.printf("%iT: %fC ", i, tempC[i]);
         Serial.printf("%iC: %i ", i, capread[i]);
+        String data = "{\"capacitance\": " + String(capread[i]) + "," +
+                      "\"sensor\": " + String(i) + "," +
+                      "\"temperature\": " + String(tempC[i]) + "," +
+                      "\"timestamp\": " + String(time) + "}";
+        String post = "POST /" + String(es_index) + "/_doc HTTP/1.1\r\n" + 
+                      "Content-Length: " + data.length() + "\r\n" +
+                      "Content-Type: application/json" + "\r\n" +
+                      "\r\n" +
+                      data;
+        Serial.println();
+        Serial.println(post);
+        client.print(post);
+        delay(50);
+        while(client.available()) {
+            String line = client.readStringUntil('\r');
+            Serial.print(line);
+        }
     }
-    Serial.println();
     ArduinoOTA.handle();
-    delay(1000);
+    delay(5000);
 }
