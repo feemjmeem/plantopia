@@ -16,9 +16,9 @@ const char *es_host = ES_HOST;
 const uint16_t es_port = ES_PORT;
 const char *es_index = ES_INDEX;
 
-Adafruit_seesaw sensor [4];
-bool sensorStatus[4];
-int baseAddress = 0x36;
+Adafruit_seesaw sensor [SENSOR_COUNT];
+bool sensorStatus[SENSOR_COUNT];
+int baseAddress = SENSOR_BASEADDRESS;
 
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "pool.ntp.org", 0);
@@ -65,7 +65,7 @@ void setup() {
     });
     ArduinoOTA.begin();
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < SENSOR_COUNT; i++) {
         int a = baseAddress + i;
         if (!sensorStatus[i]) {
             if (!sensor[i].begin(a)) {
@@ -81,8 +81,8 @@ void setup() {
 }
 
 void loop() {
-    float tempC[4];
-    uint16_t capread[4];
+    float tempC[SENSOR_COUNT];
+    uint16_t capread[SENSOR_COUNT];
     WiFiClient client;
 
     if (!client.connect(es_host, es_port)) {
@@ -90,7 +90,7 @@ void loop() {
         return;
     }
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < SENSOR_COUNT; i++) {
         timeClient.update();
         unsigned long time = timeClient.getEpochTime();
         tempC[i] = sensor[i].getTemp();

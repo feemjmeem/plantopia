@@ -8,3 +8,6 @@
 #define ES_HOST                 "MY_ES_HOST"
 #define ES_PORT                 9200
 #define ES_INDEX                "plantopia"
+
+#define SENSOR_COUNT            4
+#define SENSOR_BASEADDRESS      0x36
