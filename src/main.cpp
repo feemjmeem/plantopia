@@ -36,6 +36,7 @@ void setup() {
     Serial.begin(115200);
     delay(500);
     Serial.printf("\nConnecting...");
+    WiFi.mode(WIFI_STA);
     WiFi.hostname(hostname);
     WiFi.begin(ssid, wifi_password);
     while (WiFi.status() != WL_CONNECTED) {
